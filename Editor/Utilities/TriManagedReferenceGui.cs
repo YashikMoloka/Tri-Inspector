@@ -53,9 +53,7 @@ namespace TriInspector.Utilities
                     .Where(type => type.IsValueType || type.GetConstructor(Type.EmptyTypes) != null)
                     .ToList();
 
-                var groupByNamespace = types.Count > 20;
-
-                CanHideHeader = !groupByNamespace;
+                CanHideHeader = false;
 
                 var root = new ReferenceTypeGroupItem("Type");
                 root.AddChild(new ReferenceTypeItem(null));
@@ -63,9 +61,16 @@ namespace TriInspector.Utilities
 
                 foreach (var type in types)
                 {
-                    IEnumerable<string> namespaceEnumerator = groupByNamespace && type.Namespace != null
-                        ? type.Namespace.Split('.')
-                        : Array.Empty<string>();
+                    var groupPath = string.Empty;
+                    foreach (var attr in TriReflectionUtilities.GetAttributesCached(type))
+                    {
+                        if (attr is ReferenceGroupAttribute typedAttr)
+                        {
+                            groupPath = typedAttr.Group;
+                        }
+                    }
+
+                    IEnumerable<string> namespaceEnumerator = string.IsNullOrEmpty(groupPath) ? Array.Empty<string>() : groupPath.Split('.');
 
                     root.AddTypeChild(type, namespaceEnumerator.GetEnumerator());
                 }
